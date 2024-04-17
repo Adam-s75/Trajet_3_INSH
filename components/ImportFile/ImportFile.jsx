@@ -15,8 +15,19 @@ export default function ImportFile() {
             const sheet = workbook.Sheets[sheetName];
             const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            setExcelData(data);
-            console.log(data);
+            const tab = data.filter((el) => el.length !== 0)
+                .map((el) => [el[0], el[1], el[17], el[15]])
+                .slice(1)
+                .map((el) => [{
+                    nom: el[0],
+                    prenom: el[1],
+                    adresse: el[2],
+                    codePostal: el[3]
+                }][0]);
+            console.log(tab);
+
+            setExcelData(data.filter((el) => el.length !== 0).map((el) => [el[0], el[1], el[17], el[15]]));
+            // console.log(data.filter((el) => el.length !== 0).map((el) => [el[0], el[1], el[17], el[15]]));
         };
 
         reader.readAsBinaryString(file);
