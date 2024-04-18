@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+
 type FormEvent = React.FormEvent<HTMLInputElement>
 
 export default function SearchBar() {
@@ -10,8 +11,8 @@ export default function SearchBar() {
 
     return (
         <>
-            <input value={address} onChange={(e: FormEvent) => setAddress(e.target.value)} />
-            <input />
+            <input placeholder='Adresse'value={address} onChange={(e: FormEvent) => setAddress(e.target.value)} />
+            <input maxLength="5" placeholder='Code Postal' value={postalCode} onChange={(e:FormEvent) => setPostalCode(e.target.value)}/>
         </>
     );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styles from "@/components/SearchBar/SearchBar.module.css";
 
 export default function ProblemForm() {
     const [email, setEmail] = useState('');
@@ -22,24 +23,31 @@ export default function ProblemForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <div className={styles.Container}>
+        <form  className={styles.Form} onSubmit={handleSubmit}>
             <label htmlFor="email">Email:</label>
             <input
                 type="email"
                 id="email"
                 value={email}
+                
                 onChange={(e) => setEmail(e.target.value)}
                 required
             />
             <label htmlFor="problemDescription">Description du problème:</label>
             <textarea
+                rows={15}
+                cols={90}
                 id="problemDescription"
                 value={problemDescription}
                 onChange={(e) => setProblemDescription(e.target.value)}
                 maxLength={500}
                 required
             />
-            <button type="submit">Envoyer</button>
+            <div className={styles.ButtonContainer}>
+            <button className={styles.Submit} type="submit">Envoyer</button>
+            </div>
         </form>
+        </div>
     );
 };

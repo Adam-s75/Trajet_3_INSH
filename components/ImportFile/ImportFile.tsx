@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import * as XLSX from "xlsx";
+import styles from "./ImportFile.module.css"
 
 import { Student, Times, StudentTimes } from './interfaces';
 import SearchBar from '../SearchBar/SearchBar';
@@ -10,19 +11,16 @@ export default function ImportFile() {
     const [excelData, setExcelData] = useState<Array<Array<string | number>>>([]);
     const [jsonData, setJsonData] = useState<Array<Student>>()
     const [students, setStudents] = useState<Array<StudentTimes>>([])
+    const [companyAddress, setCompnayAddress] = useState<string>('');
+    const [companyPostalCode, setCompanyPostalCode] = useState<string>('');
+    const [companyFullAddress, setCompanyFullAddress] = useState<string>('6b rue de Viroflay, 75015');
     const apiUrl: string = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
     function handleFileUpload(e: FileEvent): void {
-        if (!e) {
-            return;
-        }
         const file = e.target.files[0];
         const reader = new FileReader();
 
         reader.onload = (event) => {
-            if (!event) {
-                return;
-            };
             const binaryString = event.target.result;
             const workbook = XLSX.read(binaryString, { type: "binary" });
             const sheetName = workbook.SheetNames[0];
@@ -36,7 +34,7 @@ export default function ImportFile() {
             };
 
             const indexNom: number = findIndexOfName(tab[0], 'nom');
-            const indexPrenom: number = findIndexOfName(tab[0], 'prénom');
+            const indexPrenom: number = findIndexOfName(tab[0], 'prÃ©nom');
             const indexAdresse: number = findIndexOfName(tab[0], 'adresse');
             const indexCodePostal: number = findIndexOfName(tab[0], 'code postal');
 
@@ -51,7 +49,6 @@ export default function ImportFile() {
             }).slice(1);
 
             setJsonData(tabFiltered)
-            console.log(tabFiltered);
 
             setExcelData(tab.map((el: (string | number)[]) => [
                 el[indexNom],
@@ -76,7 +73,7 @@ export default function ImportFile() {
                 method: 'POST',
                 headers: {
                     "Content-Type": "application/json",
-                    "X-Goog-Api-Key": "AIzaSyDEkbsvDLI-nOFtinUpWpIhWi2_zxlJ_mQ",
+                    "X-Goog-Api-Key": "AIzaSyAP0vPTrnodvVpP2RdAqT8uu24CS2I_AVc",
                     'X-Goog-FieldMask': 'routes.duration'
                 },
                 body: JSON.stringify({
@@ -92,42 +89,59 @@ export default function ImportFile() {
                 })
             })
             const data = await response.json();
-            console.log(Number(data.routes[0].duration.slice(0, -1)));
             const returnData = Number(data.routes[0].duration.slice(0, -1));
             return returnData;
         }
-        if (jsonData) {
 
-            const studentTimes: StudentTimes[] = jsonData.map((el: Student): StudentTimes => {
-                const transitTime: number = test(`${el.address}, ${el.postalCode}`, "6b rue de Viroflay, 75015", "TRANSIT");
-                const drivingTime: number = test(`${el.address}, ${el.postalCode}`, "6b rue de Viroflay, 75015", "DRIVE");
-                const cyclingTime: number = test(`${el.address}, ${el.postalCode}`, "6b rue de Viroflay, 75015", "BICYCLE");
-                return {
-                    name: el.name,
-                    surname: el.surname,
-                    address: el.address,
-                    postalCode: el.postalCode,
-                    timeTransit: transitTime,
-                    timeDriving: drivingTime,
-                    timeCycling: cyclingTime,
-                }
+        async function validAddress(address: string): Promise<void> {
+            if (!address) {
+                return;
+            }
+            const response = await fetch("https://addressvalidation.googleapis.com/v1:validateAddress?key=AIzaSyAP0vPTrnodvVpP2RdAqT8uu24CS2I_AVc", {
+                method: 'post',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    address: {
+                        addressLines: address,
+                        regionCode: "FR"
+                    }
+                })
+
             })
-            setStudents(studentTimes)
+            const data = await response.json();
+            if (jsonData && data && data.result.verdict.hasUnconfirmedComponents !== true) {
 
+                const studentTimes: StudentTimes[] = jsonData.map((el: Student): StudentTimes => {
+                    const transitTime: Promise<number> = test(`${el.address}, ${el.postalCode}`, companyFullAddress, "TRANSIT");
+                    const drivingTime: Promise<number> = test(`${el.address}, ${el.postalCode}`, companyFullAddress, "DRIVE");
+                    const cyclingTime: Promise<number> = test(`${el.address}, ${el.postalCode}`, companyFullAddress, "BICYCLE");
+                    return {
+                        name: el.name,
+                        surname: el.surname,
+                        address: el.address,
+                        postalCode: el.postalCode,
+                        timeTransit: transitTime,
+                        timeDriving: drivingTime,
+                        timeCycling: cyclingTime,
+                    }
+                })
+                setStudents(studentTimes)
+
+            }
         }
-    }, [jsonData])
+        validAddress(companyFullAddress);
+    }, [jsonData, companyFullAddress])
 
-    if (students.length > 0) {
-
-        console.log(students)
-    }
     function handleSubmit() {
-
+        setCompanyFullAddress(`${companyAddress}, ${companyPostalCode}`);
     }
 
     return (
         <div>
-            <input type="file" onChange={handleFileUpload} />
+            <input className={styles.import} type="file" onChange={handleFileUpload} />
+            <SearchBar/>
             <button onClick={handleSubmit}>Rechercher</button>
             <table>
                 <tbody>
